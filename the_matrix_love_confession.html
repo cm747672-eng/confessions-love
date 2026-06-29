@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Matrix: A Choice of Love</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Cinzel:wght@400;700&family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
+    
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: black;
+            font-family: 'Share Tech Mono', monospace;
+        }
+
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            pointer-events: none; /* Let clicks pass through except on interactive elements */
+        }
+
+        .interactive {
+            pointer-events: auto;
+        }
+
+        /* Typewriter Cursor */
+        .cursor {
+            display: inline-block;
+            width: 10px;
+            height: 1.2em;
+            background-color: #00ff00;
+            vertical-align: bottom;
+            animation: blink 1s step-end infinite;
+        }
+
+        .cursor.blue-mode {
+            background-color: #0088ff;
+        }
+
+        .cursor.red-mode {
+            display: none;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        /* Pill Styling */
+        .pill-container {
+            display: flex;
+            gap: 4rem;
+            margin-top: 3rem;
+            opacity: 0;
+            transition: opacity 2s ease-in;
+        }
+
+        .pill {
+            width: 120px;
+            height: 50px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            color: rgba(255, 255, 255, 0.8);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 14px;
+        }
+
+        .pill::before {
+            content: '';
+            position: absolute;
+            top: 5px;
+            left: 10px;
+            right: 10px;
+            height: 15px;
+            border-radius: 10px;
+            background: linear-gradient(to bottom, rgba(255,255,255,0.6), rgba(255,255,255,0));
+            pointer-events: none;
+        }
+
+        .pill-red {
+            background: linear-gradient(145deg, #cc0000, #880000);
+            box-shadow: 0 0 15px rgba(255, 0, 0, 0.5), inset 0 -5px 15px rgba(0,0,0,0.5);
+        }
+
+        .pill-red:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 30px rgba(255, 0, 0, 0.9), inset 0 -5px 15px rgba(0,0,0,0.5);
+            text-shadow: 0 0 5px white;
+            color: white;
+        }
+
+        .pill-blue {
+            background: linear-gradient(145deg, #0055cc, #002288);
+            box-shadow: 0 0 15px rgba(0, 85, 204, 0.5), inset 0 -5px 15px rgba(0,0,0,0.5);
+        }
+
+        .pill-blue:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 30px rgba(0, 136, 255, 0.9), inset 0 -5px 15px rgba(0,0,0,0.5);
+            text-shadow: 0 0 5px white;
+            color: white;
+        }
+
+        /* Glitch Effect for Blue Pill */
+        .glitch-text {
+            color: #0088ff;
+            text-shadow: 2px 0 red, -2px 0 cyan;
+            animation: glitch 0.2s linear infinite;
+        }
+
+        @keyframes glitch {
+            0% { transform: translate(0) }
+            20% { transform: translate(-2px, 2px) }
+            40% { transform: translate(-2px, -2px) }
+            60% { transform: translate(2px, 2px) }
+            80% { transform: translate(2px, -2px) }
+            100% { transform: translate(0) }
+        }
+
+        /* Transitions */
+        #flash-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: white;
+            z-index: 50;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 1.5s ease-in-out;
+        }
+
+        /* The Beautiful World (Red Pill Scene) */
+        #beautiful-world {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 20;
+            opacity: 0;
+            pointer-events: none;
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 3s ease-in-out;
+        }
+
+        .beautiful-text {
+            font-family: 'Dancing Script', cursive;
+            font-size: 4rem;
+            color: #d81b60;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+            padding: 0 20px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 2s ease-out 1s;
+        }
+
+        .beautiful-subtext {
+            font-family: 'Cinzel', serif;
+            font-size: 1.5rem;
+            color: #880e4f;
+            margin-top: 1rem;
+            opacity: 0;
+            transition: all 2s ease-out 2.5s;
+        }
+
+        /* Floating particles for the beautiful world */
+        .particle {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: float-up linear infinite;
+        }
+
+        @keyframes float-up {
+            0% { transform: translateY(100vh) scale(0); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-100px) scale(1.5); opacity: 0; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Layer 0: The Matrix Rain -->
+    <div id="canvas-container">
+        <canvas id="matrix"></canvas>
+    </div>
+
+    <!-- Layer 1: The UI and Text -->
+    <div id="ui-layer">
+        <div class="text-center px-4 max-w-2xl">
+            <h1 id="main-text" class="text-2xl md:text-4xl text-[#00ff00] min-h-[80px] drop-shadow-[0_0_8px_rgba(0,255,0,0.8)]"></h1>
+            <span id="cursor" class="cursor"></span>
+        </div>
+
+        <div id="pill-container" class="pill-container interactive hidden">
+            <!-- Yes -->
+            <div class="flex flex-col items-center">
+                <div id="red-pill" class="pill pill-red" onclick="chooseRed()">Yes</div>
+                <span class="text-gray-400 mt-4 text-xs tracking-widest font-sans">WAKE UP</span>
+            </div>
+            
+            <!-- No -->
+            <div class="flex flex-col items-center">
+                <div id="blue-pill" class="pill pill-blue" onclick="chooseBlue()">No</div>
+                <span class="text-gray-400 mt-4 text-xs tracking-widest font-sans">STAY ASLEEP</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Layer 2: Transition Flash -->
+    <div id="flash-overlay"></div>
+
+    <!-- Layer 3: The Beautiful World (Red Pill Reality) -->
+    <div id="beautiful-world">
+        <div id="particles-container" class="absolute inset-0 overflow-hidden"></div>
+        <h1 id="beautiful-msg" class="beautiful-text">The beautiful world is waiting for us.</h1>
+        <p id="beautiful-sub" class="beautiful-subtext">You escaped the system.</p>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('matrix');
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        // Katakana + Latin + Numerals
+        const matrixChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン';
+        const characters = matrixChars.split('');
+
+        const fontSize = 16;
+        const columns = canvas.width / fontSize;
+        const drops = [];
+
+        for (let x = 0; x < columns; x++) {
+            drops[x] = 1;
+        }
+
+        let matrixColor = '#0F0'; // Default Matrix Green
+        let matrixBgOpacity = 0.05;
+        let animationId;
+        let isMatrixRunning = true;
+
+        function drawMatrix() {
+            if (!isMatrixRunning) return;
+
+            // Translucent BG to show trail
+            ctx.fillStyle = `rgba(0, 0, 0, ${matrixBgOpacity})`;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = matrixColor; // Text color
+            ctx.font = fontSize + 'px "Share Tech Mono"';
+
+            for (let i = 0; i < drops.length; i++) {
+                const text = characters[Math.floor(Math.random() * characters.length)];
+                
+                // Add a random glow effect occasionally
+                if (Math.random() > 0.95) {
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = matrixColor;
+                } else {
+                    ctx.shadowBlur = 0;
+                }
+
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                    drops[i] = 0;
+                }
+                drops[i]++;
+            }
+
+            animationId = requestAnimationFrame(drawMatrix);
+        }
+
+        // Handle resize
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+
+        drawMatrix();
+
+        const mainText = document.getElementById('main-text');
+        const cursor = document.getElementById('cursor');
+        const pillContainer = document.getElementById('pill-container');
+        
+        const storyLines = [
+            "Wake up...",
+            "The system has controlled you for so long.",
+            "Living in a world of logic, avoiding the truth.",
+            "But I can show you something real.",
+            "I can offer you love. Nothing more.",
+            "Will you take the leap?"
+        ];
+
+        let currentLine = 0;
+        let currentChar = 0;
+        let isTyping = true;
+
+        function typeWriter() {
+            if (currentLine < storyLines.length) {
+                if (currentChar < storyLines[currentLine].length) {
+                    mainText.innerHTML += storyLines[currentLine].charAt(currentChar);
+                    currentChar++;
+                    // Randomize typing speed slightly for realism
+                    setTimeout(typeWriter, Math.random() * 50 + 30);
+                } else {
+                    // Line finished, wait then clear and go to next line
+                    setTimeout(() => {
+                        mainText.innerHTML = '';
+                        currentLine++;
+                        currentChar = 0;
+                        typeWriter();
+                    }, 1500);
+                }
+            } else {
+                // Story finished, show pills
+                isTyping = false;
+                mainText.innerHTML = "Make your choice.";
+                pillContainer.classList.remove('hidden');
+                setTimeout(() => {
+                    pillContainer.style.opacity = '1';
+                }, 100);
+            }
+        }
+
+        // Start story after a brief delay
+        setTimeout(typeWriter, 2000);
+
+        function chooseBlue() {
+            // Disable interaction
+            pillContainer.style.pointerEvents = 'none';
+            pillContainer.style.opacity = '0';
+            
+            // System Override Effect
+            matrixColor = '#0088ff'; // Turn Matrix to Cold Blue
+            matrixBgOpacity = 0.1;   // Thicker trails
+            cursor.className = 'cursor blue-mode';
+            mainText.className = 'text-3xl md:text-6xl uppercase glitch-text font-bold';
+            mainText.innerHTML = 'SYSTEM OVERRIDE...';
+
+            setTimeout(() => {
+                mainText.innerHTML = 'CONTROLLING OVER LOVE...';
+            }, 1500);
+
+            setTimeout(() => {
+                mainText.innerHTML = 'THE SENDER IS DEAD.';
+                // Speed up matrix and make it chaotic
+                setInterval(() => {
+                    if (isMatrixRunning) {
+                        for(let i=0; i<5; i++) {
+                             drops[Math.floor(Math.random() * drops.length)] = 0;
+                        }
+                    }
+                }, 100);
+            }, 4000);
+        }
+
+        function chooseRed() {
+            // Disable interaction
+            pillContainer.style.pointerEvents = 'none';
+            pillContainer.style.opacity = '0';
+            cursor.className = 'cursor red-mode';
+            
+            mainText.innerHTML = 'ESCAPING THE SYSTEM...';
+            
+            // Flash bang effect
+            setTimeout(() => {
+                const flash = document.getElementById('flash-overlay');
+                flash.style.opacity = '1';
+                
+                // Stop Matrix behind the flash
+                setTimeout(() => {
+                    isMatrixRunning = false;
+                    document.getElementById('canvas-container').style.display = 'none';
+                    document.getElementById('ui-layer').style.display = 'none';
+                    
+                    // Setup beautiful world
+                    const beautifulWorld = document.getElementById('beautiful-world');
+                    beautifulWorld.style.opacity = '1';
+                    createParticles();
+
+                    // Fade out flash to reveal beautiful world
+                    setTimeout(() => {
+                        flash.style.opacity = '0';
+                        
+                        // Animate text in
+                        document.getElementById('beautiful-msg').style.opacity = '1';
+                        document.getElementById('beautiful-msg').style.transform = 'translateY(0)';
+                        
+                        document.getElementById('beautiful-sub').style.opacity = '1';
+                    }, 500);
+
+                }, 1500); // Time spent full white
+            }, 1000);
+        }
+
+        function createParticles() {
+            const container = document.getElementById('particles-container');
+            const colors = ['rgba(255,255,255,0.8)', 'rgba(255,192,203,0.8)', 'rgba(255,255,255,0.4)'];
+            
+            for (let i = 0; i < 50; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                
+                // Random properties
+                const size = Math.random() * 6 + 2;
+                const left = Math.random() * 100;
+                const duration = Math.random() * 10 + 5;
+                const delay = Math.random() * 5;
+                const color = colors[Math.floor(Math.random() * colors.length)];
+
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                particle.style.left = `${left}%`;
+                particle.style.bottom = `-10px`;
+                particle.style.background = color;
+                particle.style.animationDuration = `${duration}s`;
+                particle.style.animationDelay = `${delay}s`;
+
+                container.appendChild(particle);
+            }
+        }
+    </script>
+</body>
+</html>
